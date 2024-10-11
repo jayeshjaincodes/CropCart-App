@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1037467007539",
+    "project_id": "crop-cart",
+    "storage_bucket": "crop-cart.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1037467007539:android:189d5273d00160f472c146",
+        "android_client_info": {
+          "package_name": "com.example.cropcart"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDE5nrPaBXssFZ7bEPy6FtpKVl2Zjey8S0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
