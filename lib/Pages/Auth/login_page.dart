@@ -12,6 +12,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
   final emailController = TextEditingController();
@@ -265,31 +266,31 @@ class _LoginPageState extends State<LoginPage> {
                               width: 45,
                             ),
                           ),
-                          const SizedBox(width: 30.0),
-                          InkWell(
-                            onTap: () async {
-                              try {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Apple sign-in successful!'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Error: ${e.toString()}'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            },
-                            child: Image.asset(
-                              "assets/apple.png",
-                              height: 45,
-                              width: 50,
-                            ),
-                          ),
+                          // const SizedBox(width: 30.0),
+                          // InkWell(
+                          //   onTap: () async {
+                          //     try {
+                          //       ScaffoldMessenger.of(context).showSnackBar(
+                          //         const SnackBar(
+                          //           content: Text('Apple sign-in successful!'),
+                          //           backgroundColor: Colors.green,
+                          //         ),
+                          //       );
+                          //     } catch (e) {
+                          //       ScaffoldMessenger.of(context).showSnackBar(
+                          //         SnackBar(
+                          //           content: Text('Error: ${e.toString()}'),
+                          //           backgroundColor: Colors.red,
+                          //         ),
+                          //       );
+                          //     }
+                          //   },
+                          //   child: Image.asset(
+                          //     "assets/apple.png",
+                          //     height: 45,
+                          //     width: 50,
+                          //   ),
+                          // ),
                         ],
                       ),
                       const SizedBox(height: 30.0),
