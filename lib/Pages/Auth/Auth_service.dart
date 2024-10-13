@@ -1,8 +1,7 @@
+import 'package:cropcart/Pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:the_apple_sign_in/the_apple_sign_in.dart';
 
 class GoogleAuthService {
   static Future<void> loginWithGoogle(BuildContext context) async {
@@ -25,6 +24,8 @@ class GoogleAuthService {
       );
 
       await FirebaseAuth.instance.signInWithCredential(credential);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage(),));
+      
 
       // Success message
       ScaffoldMessenger.of(context).showSnackBar(

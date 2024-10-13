@@ -1,5 +1,6 @@
 import 'package:cropcart/Pages/Auth/forgotpassword_page.dart';
 import 'package:cropcart/Pages/Auth/signup_page.dart';
+import 'package:cropcart/Pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cropcart/Pages/Auth/Auth_service.dart';
@@ -12,7 +13,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  
+
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
   final emailController = TextEditingController();
@@ -31,6 +32,7 @@ class _LoginPageState extends State<LoginPage> {
           email: emailController.text,
           password: passwordController.text,
         );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage(),));
 
         // Success message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -300,7 +302,7 @@ class _LoginPageState extends State<LoginPage> {
                           const Text(
                             'New user? ',
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w400),
+                                fontSize: 15, fontWeight: FontWeight.w400),
                           ),
                           GestureDetector(
                             onTap: () {
@@ -313,7 +315,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: const Text(
                               'Register',
                               style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.orange),
                             ),
