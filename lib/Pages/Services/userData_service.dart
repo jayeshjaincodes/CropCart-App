@@ -1,4 +1,3 @@
-// lib/Pages/Services/userData_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -13,7 +12,7 @@ class UserDataService {
             .get();
 
         if (userDoc.exists) {
-          // Return all user data as a Map
+          // Return all user data as a Map, including profile image URL
           return {
             'name': userDoc.data()?['name'] ?? 'No Name',
             'username': userDoc.data()?['username'] ?? 'No Username',
@@ -25,7 +24,8 @@ class UserDataService {
             'pincode': userDoc.data()?['pincode'] ?? 'No Pincode',
             'created_at': userDoc.data()?['created_at']?.toDate() ?? 'No Creation Date',
             'last_login': userDoc.data()?['last_login']?.toDate() ?? 'No Last Login Date',
-            'phone_number': userDoc.data()?['phone_number'] ?? 'No Phone number'
+            'phone_number': userDoc.data()?['phone_number'] ?? 'Phone number Not Updated',
+            'profile_image_url': userDoc.data()?['profile_image_url'] ?? 'No Profile Image', // Added line
           };
         } else {
           return {'error': 'User not found'};

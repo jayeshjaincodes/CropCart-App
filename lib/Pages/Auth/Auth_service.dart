@@ -28,47 +28,40 @@ class GoogleAuthService {
       );
 
       UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      
-      // Check if user already exists in Firestore
       User? user = userCredential.user;
+
       if (user != null) {
-        // Reference to the user document in Firestore
         DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
-        
-        // Fetch user data from Firestore
         DocumentSnapshot userSnapshot = await userDoc.get();
 
-        // Get existing phone number if available, otherwise set to an empty string
-        String existingPhoneNumber = userSnapshot.exists && userSnapshot['phone_number'] != null
-            ? userSnapshot['phone_number']
-            : '';
+        String existingPhoneNumber = _getExistingPhoneNumber(userSnapshot);
 
         // Prepare user data
         var userData = {
           'name': gUser.displayName ?? '',
           'username': gUser.email.split('@')[0],
           'email': gUser.email,
-          'last_login': DateTime.now(), 
-          'phone_number': existingPhoneNumber, // Use existing phone number
+          'last_login': DateTime.now(),
+          'phone_number': existingPhoneNumber,
+          'created_at': DateTime.now(), // Always set to current time initially
         };
 
-        // Only set created_at if the user document does not exist
-        if (!userSnapshot.exists) {
-          userData['created_at'] = DateTime.now(); // Set created_at for new users
+        // If the user document already exists, update the last_login and phone_number
+        if (userSnapshot.exists) {
+          userData.remove('created_at'); // Remove created_at for existing users
         }
 
         // Store or update user data in Firestore
         await userDoc.set(userData, SetOptions(merge: true)); // Use merge to avoid overwriting existing data
       }
 
-      // Navigate to HomePage
       if (context.mounted) {
         await Future.delayed(const Duration(milliseconds: 100)); // Optional delay
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomePage()),
         );
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Google login successful!'),
@@ -109,5 +102,14 @@ class GoogleAuthService {
         MaterialPageRoute(builder: (context) => const LoginPage()), // Navigate to your LoginPage
       );
     }
+  }
+
+  // Helper method to get existing phone number safely
+  static String _getExistingPhoneNumber(DocumentSnapshot userSnapshot) {
+    if (userSnapshot.exists && userSnapshot.data() != null) {
+      var data = userSnapshot.data() as Map<String, dynamic>;
+      return data['phone_number'] ?? ''; // Return empty string if field does not exist
+    }
+    return ''; // Return empty string if snapshot does not exist
   }
 }

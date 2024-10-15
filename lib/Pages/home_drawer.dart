@@ -13,7 +13,8 @@ class CustomDrawer extends StatefulWidget {
   State<CustomDrawer> createState() => _CustomDrawerState();
 }
 
-class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderStateMixin {
+class _CustomDrawerState extends State<CustomDrawer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
   Map<String, dynamic>? userData;
@@ -47,15 +48,14 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
     super.dispose();
   }
 
-Future<void> fetchUserData() async {
-  final data = await userDataService.getUserData();
-  if (mounted) {  
-    setState(() {
-      userData = data;
-    });
+  Future<void> fetchUserData() async {
+    final data = await userDataService.getUserData();
+    if (mounted) {
+      setState(() {
+        userData = data;
+      });
+    }
   }
-}
-
 
   void logout() async {
     await FirebaseAuth.instance.signOut();
@@ -78,26 +78,34 @@ Future<void> fetchUserData() async {
               width: 220,
               child: DrawerHeader(
                 padding: const EdgeInsets.all(21),
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.only(
-                    bottomRight: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                  ),
-                ),
+
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircleAvatar(
-                      radius: 40,
-                      backgroundImage: AssetImage('assets/app-logo.png'),
-                    ),
+                     CircleAvatar(
+                                  radius:
+                                      40, // You can adjust the radius as needed
+                                  backgroundImage: userData?[
+                                              'profile_image_url'] !=
+                                          null
+                                      ? NetworkImage(
+                                          userData!['profile_image_url'])
+                                      : null, // Use the image URL from userData
+                                  child: userData?['profile_image_url'] ==
+                                          null // Fallback if no image URL
+                                      ? const Icon(Icons.person,
+                                          size:
+                                              30) // Default icon if no image is available
+                                      : null,
+                                ),
                     const SizedBox(height: 8),
                     Center(
                       child: Text(
-                        userData?['name'].split(' ')[0] ?? 'Loading...',
+                        userData?['name'] != null
+                            ? userData!['name'].split(' ')[0].toUpperCase()
+                            : 'Loading...', // Fallback for null case
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Colors.black,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -111,18 +119,46 @@ Future<void> fetchUserData() async {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _createDrawerItem(icon: Icons.home, text: 'HOME', onTap: () {
-                    Navigator.pop(context);
-                  }),
-                  _createDrawerItem(icon: Icons.person, text: 'MY PROFILE', onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) =>  const ProfilePage(),));
-                  }),
-                  _createDrawerItem(icon: Icons.receipt, text: 'MY TRANSACTIONS', onTap: () {}),
-                  _createDrawerItem(icon: Icons.contact_phone, text: 'CONTACT US', onTap: () {}),
-                  _createDrawerItem(icon: Icons.info, text: 'ABOUT US', onTap: () {}),
-                  _createDrawerItem(icon: Icons.help, text: 'FAQ', onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => const FAQPage(),));}),
-                  _createDrawerItem(icon: Icons.star, text: 'RATE US', onTap: () {}),
-                  _createDrawerItem(icon: Icons.share, text: 'SHARE APP', onTap: () {}),
+                  _createDrawerItem(
+                      icon: Icons.home,
+                      text: 'HOME',
+                      onTap: () {
+                        Navigator.pop(context);
+                      }),
+                  _createDrawerItem(
+                      icon: Icons.person,
+                      text: 'MY PROFILE',
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProfilePage(),
+                            ));
+                      }),
+                  _createDrawerItem(
+                      icon: Icons.receipt,
+                      text: 'MY TRANSACTIONS',
+                      onTap: () {}),
+                  _createDrawerItem(
+                      icon: Icons.contact_phone,
+                      text: 'CONTACT US',
+                      onTap: () {}),
+                  _createDrawerItem(
+                      icon: Icons.info, text: 'ABOUT US', onTap: () {}),
+                  _createDrawerItem(
+                      icon: Icons.help,
+                      text: 'FAQ',
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const FAQPage(),
+                            ));
+                      }),
+                  _createDrawerItem(
+                      icon: Icons.star, text: 'RATE US', onTap: () {}),
+                  _createDrawerItem(
+                      icon: Icons.share, text: 'SHARE APP', onTap: () {}),
                 ],
               ),
             ),
@@ -143,10 +179,10 @@ Future<void> fetchUserData() async {
                     onPressed: () async {
                       logout();
                       await GoogleAuthService.logout(context);
-                      
                     },
                     icon: const Icon(Icons.logout, color: Colors.white),
-                    label: const Text('Logout', style: TextStyle(color: Colors.white)),
+                    label: const Text('Logout',
+                        style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                     ),
@@ -160,7 +196,10 @@ Future<void> fetchUserData() async {
     );
   }
 
-  Widget _createDrawerItem({required IconData icon, required String text, GestureTapCallback? onTap}) {
+  Widget _createDrawerItem(
+      {required IconData icon,
+      required String text,
+      GestureTapCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.only(left: 15),
       child: ListTile(
@@ -171,7 +210,9 @@ Future<void> fetchUserData() async {
             Icon(icon, color: Colors.green),
             Padding(
               padding: const EdgeInsets.only(left: 8.0),
-              child: Text(text, style: const TextStyle(color: Colors.black,fontWeight: FontWeight.w500)),
+              child: Text(text,
+                  style: const TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.w500)),
             ),
           ],
         ),

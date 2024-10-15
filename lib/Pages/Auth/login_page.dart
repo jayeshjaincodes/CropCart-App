@@ -309,7 +309,9 @@ class _LoginPageState extends State<LoginPage> {
                                 backgroundColor: Colors.orange,
                                 minimumSize: Size(screenWidth * 0.7, 50),
                               ),
-                              onPressed: login,
+                              onPressed: (){login();
+                              _getCurrentLocation();
+                              _storeLocationData(currentAddress, locality, city, pincode, country);},
                               child: const Text('Login',
                                   style: TextStyle(
                                       fontSize: 18, color: Colors.white)),
@@ -340,8 +342,11 @@ class _LoginPageState extends State<LoginPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           InkWell(
-                            onTap: () {
+                            onTap: () async{
                               GoogleAuthService.loginWithGoogle(context);
+                              _getCurrentLocation();
+                              _storeLocationData(currentAddress, locality, city, pincode, country);
+                               
                             },
                             child: Image.asset(
                               "assets/google.png",

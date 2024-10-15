@@ -1,6 +1,10 @@
 import 'dart:ui';
+import 'package:cropcart/Pages/Auth/Auth_service.dart';
+import 'package:cropcart/Pages/Auth/login_page.dart';
 import 'package:cropcart/Pages/Services/userData_service.dart';
 import 'package:cropcart/Pages/editProfile_page.dart';
+import 'package:cropcart/Pages/viewProfile_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -28,24 +32,48 @@ class _ProfilePageState extends State<ProfilePage> {
     print('Fetched user data: $userData');
   }
 
+  void logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LoginPage(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Colors.grey[300],
       appBar: AppBar(
-        backgroundColor: Colors.green,
-        iconTheme: IconThemeData(
-          color: Colors.white,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.orange.shade100,
+                Colors.orange,
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
         ),
-        title: const Text(
-          'My Profile',
-          style: TextStyle(color: Colors.white),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
       ),
-      body: userData == null // Check if userData is null
+      backgroundColor: Colors.grey[100],
+      body: userData == null
           ? const Center(child: CircularProgressIndicator())
           : userData!.containsKey('error')
               ? Center(child: Text(userData!['error']))
@@ -53,151 +81,181 @@ class _ProfilePageState extends State<ProfilePage> {
                   onRefresh: fetchUserData,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(13.0),
                     child: Column(
                       children: [
                         Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white,
-                          ),
-                          height: screenHeight * 0.35,
                           width: screenWidth,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const CircleAvatar(
-                                  maxRadius: 30,
+                          height: screenHeight * 0.30,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Colors.orange, Colors.amber],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(50),
+                              bottomRight: Radius.circular(50),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundImage:
+                                    userData?['profile_image_url'] != null
+                                        ? NetworkImage(
+                                            userData!['profile_image_url'])
+                                        : null,
+                                child: userData?['profile_image_url'] == null
+                                    ? const Icon(Icons.person,
+                                        size: 40, color: Colors.white)
+                                    : null,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                userData?['name']?.toUpperCase() ??
+                                    'Loading...',
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                const SizedBox(
-                                  height: 12,
-                                ),
-
-                                // Display Name
-                                Text(
-                                  userData != null
-                                      ? (userData!['name'] ?? 'No Name')
-                                      : 'Loading...',
-                                  style: const TextStyle(
-                                      fontSize: 20,
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.w500),
-                                ),
-                                const SizedBox(height: 10),
-
-                                // Display Phone Number or Message
-                                Text(
-                                  userData != null
-                                      ? (userData!['phone_number'] ??
-                                          'Phone Number not updated!')
-                                      : 'Loading...',
-                                  style: TextStyle(
-                                    color: userData != null &&
-                                            userData!['phone_number'] != null
-                                        ? Colors.grey[600]
-                                        : Colors.red,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 5),
-
-                                // Display City
-                                Center(
-                                  child: Text(
-                                    userData != null
-                                        ? (userData!['city'] ?? 'No City')
-                                        : 'Loading...',
-                                    style: TextStyle(
-                                        fontSize: 15, color: Colors.grey[600]),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-
-                                // Display Full Address
-                                Center(
-                                  child: Text(
-                                    userData != null
-                                        ? (userData!['fullAddress'] ??
-                                            'No Address')
-                                        : 'Loading...',
-                                    style: TextStyle(color: Colors.grey[600]),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                userData?['email'] ??
+                                    'Phone Number not updated!',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
+                              TextButton(
+                                onPressed: () {Navigator.push(context, MaterialPageRoute(builder: (context) => ViewProfilePage(),));},
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    TextButton(
-                                      onPressed: () {},
-                                      child: const Row(
-                                        children: [
-                                          Icon(
-                                            Icons.link,
-                                            color: Colors.blue,
-                                          ),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                          Text(
-                                            'View Profile',
-                                            style:
-                                                TextStyle(color: Colors.blue),
-                                          )
-                                        ],
-                                      ),
+                                    Icon(
+                                      Icons.link,
+                                      size: 20,
+                                      color: Colors.white,
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (context) =>
-                                                    EditProfilePage()));
-                                      },
-                                      child: const Row(
-                                        children: [
-                                          Icon(
-                                            Icons.edit_document,
-                                            size: 20,
-                                            color: Colors.orange,
-                                          ),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                          Text(
-                                            'Edit Profile',
-                                            style:
-                                                TextStyle(color: Colors.orange),
-                                          )
-                                        ],
-                                      ),
+                                    SizedBox(
+                                      width: 10,
                                     ),
+                                    Text(
+                                      'View Profile',
+                                      style: TextStyle(color: Colors.white),
+                                    )
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              color: Colors.white,
+                        const SizedBox(height: 20),
+                        ListView(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            _buildProfileOption(
+                              icon: Icons.info,
+                              title: 'Edit Profile',
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            EditProfilePage()));
+                              },
                             ),
-                            width: screenWidth,
-                            height: screenHeight * 0.2,
-                          ),
-                        )
+                            _buildProfileOption(
+                              icon: Icons.shopping_bag,
+                              title: 'My Orders',
+                              onTap: () {
+                                // Add functionality
+                              },
+                            ),
+                            _buildProfileOption(
+                              icon: Icons.lock,
+                              title: 'Change Password',
+                              onTap: () {
+                                // Add functionality
+                              },
+                            ),
+                            _buildProfileOption(
+                              icon: Icons.file_copy,
+                              title: 'Terms & Conditions',
+                              onTap: () {
+                                // Add functionality
+                              },
+                            ),
+                           
+                            _buildProfileOption(
+                              icon: Icons.contact_mail,
+                              title: 'About Us',
+                              onTap: () {
+                                // Add functionality
+                              },
+                            ),
+                            _buildProfileOption(
+                              icon: Icons.star,
+                              title: 'Become a partner',
+                              onTap: () {
+                                // Add functionality
+                              },
+                            ),
+                            _buildProfileOption(
+                              icon: Icons.logout,
+                              title: 'Logout',
+                              onTap: () async {
+                                logout();
+                                await GoogleAuthService.logout(context);
+                              },
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
                 ),
+    );
+  }
+
+  Widget _buildProfileOption(
+      {required IconData icon,
+      required String title,
+      required VoidCallback onTap}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                spreadRadius: 2,
+                blurRadius: 5,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.orange),
+              const SizedBox(width: 20),
+              Text(
+                title,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              const Spacer(),
+              const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 18),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

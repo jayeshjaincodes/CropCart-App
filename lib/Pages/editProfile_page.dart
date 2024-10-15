@@ -4,6 +4,7 @@ import 'package:cropcart/Pages/Services/userData_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -13,12 +14,11 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  Map<String, dynamic>? userData; // To hold user data
+  Map<String, dynamic>? userData;
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   final UserDataService userDataService = UserDataService();
 
-  // TextEditingControllers
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
@@ -30,19 +30,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    fetchUserData(); // Fetch user data when the page is initialized
+    fetchUserData();
   }
 
   Future<void> fetchUserData() async {
     try {
       final data = await userDataService.getUserData();
-      print('Fetched user data: $data'); // Debug print
-
-      if (data != null) {
+      if (data != null && mounted) {
         setState(() {
-          userData = data; // Set the fetched data
-
-          // Set controllers with existing data
+          userData = data;
           nameController.text = userData?['name'] ?? '';
           phoneController.text = userData?['phone_number'] ?? '';
           addressController.text = userData?['fullAddress'] ?? '';
@@ -52,16 +48,52 @@ class _EditProfilePageState extends State<EditProfilePage> {
           countryController.text = userData?['country'] ?? '';
         });
       } else {
-        print('No user data found'); // Log if no data is found
+        print('No user data found');
       }
     } catch (e) {
-      print('Error fetching user data: $e'); // Log any errors
+      print('Error fetching user data: $e');
+    }
+  }
+
+  Future<void> _uploadImage(File image) async {
+    try {
+      String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('user_profiles')
+          .child('$userId.jpg');
+
+      await storageRef.putFile(image);
+      String downloadURL = await storageRef.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'profile_image_url': downloadURL,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Image uploaded successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading image: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error uploading image: $e');
     }
   }
 
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+    if (pickedFile != null && mounted) {
       setState(() {
         _selectedImage = File(pickedFile.path);
       });
@@ -76,47 +108,49 @@ class _EditProfilePageState extends State<EditProfilePage> {
         stateController.text.isEmpty ||
         pincodeController.text.isEmpty ||
         countryController.text.isEmpty) {
-      // Show a message if any field is empty
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill all fields'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
-    // Get the user ID from the current user
     String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-    // Check if userId is valid
     if (userId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User not found. Please log in again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User not found. Please log in again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
     try {
-      // Check if the document exists
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .get();
+
       if (!userDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User document does not exist'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('User document does not exist'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
         return;
       }
 
-      // Update data in Firestore
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'name': nameController.text,
         'phone_number': phoneController.text,
@@ -126,44 +160,73 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'pincode': pincodeController.text,
         'country': countryController.text,
       });
-      // Show a success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+
+      if (_selectedImage != null) {
+        await _uploadImage(_selectedImage!);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
-      // Handle any errors
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating profile: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      print('Error: $e'); // Log the error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      print('Error: $e');
     }
+  }
+
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+    cityController.dispose();
+    stateController.dispose();
+    pincodeController.dispose();
+    countryController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.green,
-        iconTheme: IconThemeData(
-          color: Colors.white,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.lightGreen.shade400,
+                Colors.green,
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
         ),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back,color: Colors.white,),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
       ),
-      body: userData == null // Check if userData is null
+      body: userData == null
           ? const Center(child: CircularProgressIndicator())
           : userData!.containsKey('error')
               ? Center(child: Text(userData!['error']))
@@ -175,13 +238,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           ClipPath(
                             clipper: BottomWaveClipper(),
                             child: Container(
-                              width: double.infinity,
-                              height: 180,
-                              color: Colors.green,
+                              width: screenWidth,
+                              height: screenHeight * 0.23,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.green, // Start color
+                                    Colors.green.shade800, // End color
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
                             ),
                           ),
                           Positioned(
-                            top: 70,
+                            top: 30,
                             left: (screenWidth / 2) - 50,
                             child: GestureDetector(
                               onTap: _pickImage,
@@ -190,8 +262,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 backgroundColor: Colors.white,
                                 backgroundImage: _selectedImage != null
                                     ? FileImage(_selectedImage!)
-                                    : null,
-                                child: _selectedImage == null
+                                    : (userData?['profile_image_url'] != null &&
+                                            userData?['profile_image_url']
+                                                .isNotEmpty)
+                                        ? NetworkImage(
+                                            userData!['profile_image_url'])
+                                        : null,
+                                child: _selectedImage == null &&
+                                        (userData?['profile_image_url'] ==
+                                                null ||
+                                            userData!['profile_image_url']
+                                                .isEmpty)
                                     ? const Icon(Icons.camera_alt,
                                         size: 50, color: Colors.grey)
                                     : null,
@@ -204,7 +285,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
                           children: [
-                            // First Name Field
                             TextFormField(
                               controller: nameController,
                               decoration: const InputDecoration(
@@ -218,8 +298,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-
-                            // Phone Number
                             TextFormField(
                               controller: phoneController,
                               keyboardType: TextInputType.number,
@@ -234,76 +312,61 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-
-                            // Address
                             TextFormField(
                               controller: addressController,
                               minLines: 1,
                               maxLines: 3,
                               decoration: const InputDecoration(
-                                  labelText: 'Address',
-                                  labelStyle: TextStyle(color: Colors.black),
-                                  prefixIcon: Icon(Icons.location_city),
-                                  border: OutlineInputBorder(),
-                                  focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                          width: 2, color: Colors.green))),
+                                labelText: 'Address',
+                                labelStyle: TextStyle(color: Colors.black),
+                                prefixIcon: Icon(Icons.location_city),
+                                border: OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        width: 2, color: Colors.green)),
+                              ),
                             ),
                             const SizedBox(height: 16),
-
-                            // City
                             TextFormField(
                               controller: cityController,
                               decoration: const InputDecoration(
-                                  labelText: 'City',
-                                  labelStyle: TextStyle(color: Colors.black),
-                                  prefixIcon: Icon(Icons.location_on),
-                                  border: OutlineInputBorder(),
-                                  focusedBorder: OutlineInputBorder(
-                                      borderSide: BorderSide(
-                                          width: 2, color: Colors.green))),
+                                labelText: 'City',
+                                labelStyle: TextStyle(color: Colors.black),
+                                prefixIcon: Icon(Icons.location_on),
+                                border: OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        width: 2, color: Colors.green)),
+                              ),
                             ),
                             const SizedBox(height: 16),
-
-                            // State and Pincode Row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                SizedBox(
-                                  width: screenWidth * 0.43,
-                                  child: TextFormField(
-                                    controller: stateController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'State',
-                                      labelStyle:
-                                          TextStyle(color: Colors.black),
-                                      border: OutlineInputBorder(),
-                                      focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                              width: 2, color: Colors.green)),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: screenWidth * 0.43,
-                                  child: TextFormField(
-                                    controller: pincodeController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Pincode',
-                                      labelStyle:
-                                          TextStyle(color: Colors.black),
-                                      border: OutlineInputBorder(),
-                                      focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(
-                                              width: 2, color: Colors.green)),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            TextFormField(
+                              controller: stateController,
+                              decoration: const InputDecoration(
+                                labelText: 'State',
+                                labelStyle: TextStyle(color: Colors.black),
+                                prefixIcon: Icon(Icons.location_city_sharp),
+                                border: OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        width: 2, color: Colors.green)),
+                              ),
                             ),
                             const SizedBox(height: 16),
-
-                            // Country
+                            TextFormField(
+                              controller: pincodeController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Pincode',
+                                labelStyle: TextStyle(color: Colors.black),
+                                prefixIcon: Icon(Icons.pin),
+                                border: OutlineInputBorder(),
+                                focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                        width: 2, color: Colors.green)),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             TextFormField(
                               controller: countryController,
                               decoration: const InputDecoration(
@@ -317,23 +380,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-
-                            // Update Button
-                            Container(
-                              width: 150,
+                            SizedBox(
+                              width: double.infinity,
                               child: ElevatedButton(
+                                onPressed: updateUserData,
                                 style: ElevatedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
                                   backgroundColor: Colors.green,
                                 ),
-                                onPressed: () {
-                                  updateUserData(); // Call update function
-                                },
-                                child: const Text(
-                                  'Update',
-                                ),
+                                child: const Text('Save Changes',style: TextStyle(color: Colors.white),),
                               ),
                             ),
                           ],
@@ -352,12 +406,14 @@ class BottomWaveClipper extends CustomClipper<Path> {
     var path = Path();
     path.lineTo(0, size.height - 50);
     path.quadraticBezierTo(
-        size.width / 2, size.height, size.width, size.height - 50);
+        size.width / 4, size.height, size.width / 2, size.height - 30);
+    path.quadraticBezierTo(
+        size.width * 3 / 4, size.height - 60, size.width, size.height - 30);
     path.lineTo(size.width, 0);
     path.close();
     return path;
   }
 
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+  bool shouldReclip(CustomClipper<Path> oldClipper) => true;
 }

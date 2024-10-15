@@ -107,7 +107,8 @@ class _SignupPageState extends State<SignupPage> {
           'username': emailController.text.split('@')[0],
           'email': emailController.text,
           'created_at': DateTime.now(),
-          'phone_number':''
+          'phone_number':'',
+          'last_login': DateTime.now()
         };
 
         if (usercred.user != null) {
