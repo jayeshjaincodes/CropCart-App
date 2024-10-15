@@ -1,9 +1,9 @@
+import 'package:cropcart/Pages/Auth/Auth_service.dart';
 import 'package:cropcart/Pages/Auth/login_page.dart';
-import 'package:cropcart/Pages/Services/location_service.dart';
+import 'package:cropcart/Pages/Services/userData_service.dart';
 import 'package:cropcart/Pages/home_drawer.dart'; 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,29 +13,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String currentAddress = 'Fetching location...';
-  final LocationService locationService = LocationService();
+  Map<String, dynamic>? userData;
+  final UserDataService userDataService = UserDataService();
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+    fetchUserData();
   }
 
-  Future<void> _getCurrentLocation() async {
-    try {
-      Position? position = await locationService.getCurrentPosition();
-      if (position != null) {
-        String address = await locationService.getAddressFromLatLng(position);
-        setState(() {
-          currentAddress = address;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        currentAddress = e.toString();
-      });
-    }
+  Future<void> fetchUserData() async {
+    final data = await userDataService.getUserData();
+    setState(() {
+      userData = data;
+    });
+    print('Fetched user data: $userData');
   }
 
   void logout() async {
@@ -53,56 +45,104 @@ class _HomePageState extends State<HomePage> {
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
 
-    return Scaffold(
-      drawer: CustomDrawer(),
-      appBar: AppBar(
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(screenHeight * 0.035),
-          child: Padding(
-            padding: const EdgeInsets.only(right: 8, left: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
+    return userData == null // Check if userData is null
+        ? const Center(child: CircularProgressIndicator())
+        : userData!.containsKey('error')
+            ? Center(child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.location_on,
-                  size: 25,
+                Text(userData!['error'],style: TextStyle(fontSize: 20),),
+                const SizedBox(height: 60,),
+                SizedBox(
+                  width: screenWidth *0.5, 
+                  child: ElevatedButton(onPressed: () async {
+                      logout();
+                      await GoogleAuthService.logout(context);
+                      
+                    },  child:  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Icon(Icons.logout,color: Colors.white,),
+                      Text('Logout',style: TextStyle(color: Colors.white),),
+                    ],
+                  ),style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+                  ),
+                )
+              ],
+            ))
+            : Scaffold(
+                drawer: CustomDrawer(),
+                appBar: AppBar(
+                  bottom: PreferredSize(
+                    preferredSize: Size.fromHeight(screenHeight * 0.035),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8, left: 10),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 25,
+                              ),
+                              const SizedBox(width: 9),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Text(
+                                    userData != null
+                                        ? (userData!['fullAddress'] ?? 'No Address')
+                                        : 'Fetching location...',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(width: 0,),
+                      Image.asset(
+                        'assets/app-logo.png',
+                        width: screenWidth * 0.25,
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.search),
+                      ),
+                    ],
+                  ),
+                  centerTitle: true,
                 ),
-                const SizedBox(width: 9),
-                Expanded(
+                body: RefreshIndicator(
+                  onRefresh: fetchUserData,
                   child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Text(
-                      currentAddress,
-                      style: const TextStyle(
-                        fontSize: 12,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Container(
+                      // Ensures the content is scrollable and pull-to-refresh is enabled
+                      constraints: BoxConstraints(
+                        minHeight: screenHeight,
+                      ),
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Center(child: Text('Home page'))
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(width: 0,),
-            Image.asset(
-              'assets/app-logo.png',
-              width: screenWidth * 0.25,
-            ),
-            IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.search),
-            ),
-          ],
-        ),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: const Text('Go to Profile Page.'),
-      ),
-    );
+              );
   }
 }

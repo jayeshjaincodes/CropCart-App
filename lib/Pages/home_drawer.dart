@@ -1,5 +1,7 @@
+import 'package:cropcart/Pages/Auth/Auth_service.dart';
 import 'package:cropcart/Pages/Auth/login_page.dart';
 import 'package:cropcart/Pages/Services/userData_service.dart';
+import 'package:cropcart/Pages/faq_page.dart';
 import 'package:cropcart/Pages/profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -14,9 +16,8 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
-  String userName = 'Fetching...';
-
-  final UserDataService _userService = UserDataService(); 
+  Map<String, dynamic>? userData;
+  final UserDataService userDataService = UserDataService();
 
   @override
   void initState() {
@@ -37,7 +38,7 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
     );
 
     _animationController.forward();
-    _fetchUserName(); // Fetch user data from Firestore
+    fetchUserData(); // Fetch user data from Firestore
   }
 
   @override
@@ -45,19 +46,23 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
     _animationController.dispose();
     super.dispose();
   }
-  Future<void> _fetchUserName() async {
-    final name = await _userService.getUserName(); // Fetch the user name using the service
+
+Future<void> fetchUserData() async {
+  final data = await userDataService.getUserData();
+  if (mounted) {  
     setState(() {
-      userName = name;
+      userData = data;
     });
   }
+}
+
 
   void logout() async {
     await FirebaseAuth.instance.signOut();
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => LoginPage(),
+        builder: (context) => const LoginPage(),
       ),
     );
   }
@@ -70,7 +75,7 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
         child: Column(
           children: [
             SizedBox(
-              width: 200,
+              width: 220,
               child: DrawerHeader(
                 padding: const EdgeInsets.all(21),
                 decoration: const BoxDecoration(
@@ -88,12 +93,14 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                       backgroundImage: AssetImage('assets/app-logo.png'),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      userName.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Center(
+                      child: Text(
+                        userData?['name'].split(' ')[0] ?? 'Loading...',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -104,14 +111,16 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _createDrawerItem(icon: Icons.home, text: 'HOME', onTap: () {}),
+                  _createDrawerItem(icon: Icons.home, text: 'HOME', onTap: () {
+                    Navigator.pop(context);
+                  }),
                   _createDrawerItem(icon: Icons.person, text: 'MY PROFILE', onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfilePage(),));
-                  },),
+                    Navigator.push(context, MaterialPageRoute(builder: (context) =>  const ProfilePage(),));
+                  }),
                   _createDrawerItem(icon: Icons.receipt, text: 'MY TRANSACTIONS', onTap: () {}),
                   _createDrawerItem(icon: Icons.contact_phone, text: 'CONTACT US', onTap: () {}),
                   _createDrawerItem(icon: Icons.info, text: 'ABOUT US', onTap: () {}),
-                  _createDrawerItem(icon: Icons.help, text: 'FAQ', onTap: () {}),
+                  _createDrawerItem(icon: Icons.help, text: 'FAQ', onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => const FAQPage(),));}),
                   _createDrawerItem(icon: Icons.star, text: 'RATE US', onTap: () {}),
                   _createDrawerItem(icon: Icons.share, text: 'SHARE APP', onTap: () {}),
                 ],
@@ -131,7 +140,11 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
-                    onPressed: logout,
+                    onPressed: () async {
+                      logout();
+                      await GoogleAuthService.logout(context);
+                      
+                    },
                     icon: const Icon(Icons.logout, color: Colors.white),
                     label: const Text('Logout', style: TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
@@ -147,24 +160,23 @@ class _CustomDrawerState extends State<CustomDrawer> with SingleTickerProviderSt
     );
   }
 
-Widget _createDrawerItem({required IconData icon, required String text, GestureTapCallback? onTap}) {
-  return Padding(
-    padding: const EdgeInsets.only(left: 15),
-    child: ListTile(
-      contentPadding: EdgeInsets.zero, 
-      dense: true, 
-      title: Row(
-        children: <Widget>[
-          Icon(icon, color: Colors.green),
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Text(text, style: const TextStyle(color: Colors.green)),
-          ),
-        ],
+  Widget _createDrawerItem({required IconData icon, required String text, GestureTapCallback? onTap}) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 15),
+      child: ListTile(
+        contentPadding: EdgeInsets.all(3),
+        dense: true,
+        title: Row(
+          children: <Widget>[
+            Icon(icon, color: Colors.green),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Text(text, style: const TextStyle(color: Colors.black,fontWeight: FontWeight.w500)),
+            ),
+          ],
+        ),
+        onTap: onTap,
       ),
-      onTap: onTap,
-    ),
-  );
-}
-
+    );
+  }
 }

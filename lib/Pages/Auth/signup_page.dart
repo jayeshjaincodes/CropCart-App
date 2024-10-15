@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cropcart/Pages/Auth/Auth_service.dart';
 import 'package:cropcart/Pages/Auth/wrapper.dart';
+import 'package:cropcart/Pages/Services/location_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:form_validator/form_validator.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/route_manager.dart';
 
 class SignupPage extends StatefulWidget {
@@ -14,6 +16,16 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
+
+  String currentAddress = 'Fetching location...';
+  String locality = 'Fetching locality...';
+  String city = ''; 
+  String pincode = ''; 
+  String country = ''; 
+  String administrativeArea = '';
+  final LocationService locationService = LocationService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
+
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
   final emailController = TextEditingController();
@@ -21,6 +33,61 @@ class _SignupPageState extends State<SignupPage> {
   final nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
+  Future<void> _getCurrentLocation() async {
+    try {
+      Position? position = await locationService.getCurrentPosition();
+      if (position != null) {
+        String fullAddress = await locationService.getFullAddress(position);
+        String loc = await locationService.getLocality(position);
+        city = await locationService.getCity(position); // Get city
+        pincode = await locationService.getPincode(position); // Get pincode
+        country = await locationService.getCountry(position); 
+        administrativeArea = await locationService.getAdministrativeArea(position);// Get country
+
+        if (mounted) {
+          setState(() {
+            currentAddress = fullAddress; // Update full address
+            locality = loc; // Update locality
+          });
+          // Store the data in Firestore
+          await _storeLocationData(fullAddress, loc, city, pincode, country);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          currentAddress = e.toString();
+          locality = 'Locality not found';
+        });
+      }
+    }
+  }
+
+  Future<void> _storeLocationData(String fullAddress, String locality, String city, String pincode, String country) async {
+    try {
+      // Use the user's UID as the document ID to store user-specific data
+      String uid = FirebaseAuth.instance.currentUser!.uid;
+      
+      // Create or update the document in Firestore
+      await _firestore.collection('users').doc(uid).set({
+        'fullAddress': fullAddress,
+        'locality': locality,
+        'city': city,
+        'pincode': pincode,
+        'country': country,
+        'administrativeArea': administrativeArea
+      }, SetOptions(merge: true)); // Merge to update without overwriting
+    } catch (e) {
+      print('Error storing location data: $e');
+    }
+  }
 
   Future<void> signUp() async {
     if (_formKey.currentState!.validate()) {
@@ -39,7 +106,8 @@ class _SignupPageState extends State<SignupPage> {
           'name': nameController.text,
           'username': emailController.text.split('@')[0],
           'email': emailController.text,
-          'created_at': DateTime.now()
+          'created_at': DateTime.now(),
+          'phone_number':''
         };
 
         if (usercred.user != null) {
@@ -88,7 +156,7 @@ class _SignupPageState extends State<SignupPage> {
         // Error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error:$e ,$errorMessage'),
+            content: Text('Error:$errorMessage'),
             backgroundColor: Colors.red, // Error color
           ),
         );

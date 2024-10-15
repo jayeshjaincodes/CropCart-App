@@ -1,16 +1,20 @@
+import 'package:cropcart/Pages/Auth/login_page.dart';
 import 'package:cropcart/Pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GoogleAuthService {
+  // Login method
   static Future<void> loginWithGoogle(BuildContext context) async {
     final GoogleSignIn googleSignIn = GoogleSignIn();
 
     try {
+      await googleSignIn.signOut(); // Ensure to sign out of Google
+
       final GoogleSignInAccount? gUser = await googleSignIn.signIn();
       if (gUser == null) {
-        // The user canceled the login
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login cancelled.')),
         );
@@ -23,71 +27,87 @@ class GoogleAuthService {
         idToken: gAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage(),));
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       
+      // Check if user already exists in Firestore
+      User? user = userCredential.user;
+      if (user != null) {
+        // Reference to the user document in Firestore
+        DocumentReference userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+        
+        // Fetch user data from Firestore
+        DocumentSnapshot userSnapshot = await userDoc.get();
 
-      // Success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Google login successful!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+        // Get existing phone number if available, otherwise set to an empty string
+        String existingPhoneNumber = userSnapshot.exists && userSnapshot['phone_number'] != null
+            ? userSnapshot['phone_number']
+            : '';
 
-      // Navigate to the next screen or perform other actions
+        // Prepare user data
+        var userData = {
+          'name': gUser.displayName ?? '',
+          'username': gUser.email.split('@')[0],
+          'email': gUser.email,
+          'last_login': DateTime.now(), 
+          'phone_number': existingPhoneNumber, // Use existing phone number
+        };
+
+        // Only set created_at if the user document does not exist
+        if (!userSnapshot.exists) {
+          userData['created_at'] = DateTime.now(); // Set created_at for new users
+        }
+
+        // Store or update user data in Firestore
+        await userDoc.set(userData, SetOptions(merge: true)); // Use merge to avoid overwriting existing data
+      }
+
+      // Navigate to HomePage
+      if (context.mounted) {
+        await Future.delayed(const Duration(milliseconds: 100)); // Optional delay
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google login successful!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
     } on FirebaseAuthException catch (e) {
-      // Handle the error based on e.code
       String errorMessage = 'An error occurred. Please try again.';
       if (e.code == 'operation-not-allowed') {
         errorMessage = 'Google sign-in is not enabled.';
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $errorMessage')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $errorMessage')),
+        );
+      }
     } catch (e) {
-      // Handle general exceptions
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     }
   }
 
-  // static Future<User> signInWithApple({List<Scope> scopes = const []}) async {
-  //   final result = await TheAppleSignIn.performRequests(
-  //     [AppleIdRequest(requestedScopes: scopes)],
-  //   );
-  //   switch (result.status) {
-  //     case AuthorizationStatus.authorized:
-  //       final appleIdCredential = result.credential!;
-  //       final oAuthProvider = OAuthProvider('apple.com');
-  //       final credential = oAuthProvider.credential(
-  //         idToken: String.fromCharCodes(appleIdCredential.identityToken!),
-  //       );
-  //       final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-  //       final firebaseUser = userCredential.user!;
-  //       if (scopes.contains(Scope.fullName)) {
-  //         final fullName = appleIdCredential.fullName;
-  //         if (fullName != null &&
-  //             fullName.givenName != null &&
-  //             fullName.familyName != null) {
-  //           final displayName = '${fullName.givenName} ${fullName.familyName}';
-  //           await firebaseUser.updateDisplayName(displayName);
-  //         }
-  //       }
-  //       return firebaseUser;
-  //     case AuthorizationStatus.error:
-  //       throw PlatformException(
-  //         code: 'ERROR_AUTHORIZATION_DENIED',
-  //         message: result.error.toString(),
-  //       );
-  //     case AuthorizationStatus.cancelled:
-  //       throw PlatformException(
-  //         code: 'ERROR_ABORTED_BY_USER',
-  //         message: 'Sign in aborted by user',
-  //       );
-  //     default:
-  //       throw UnimplementedError();
-  //   }
-  // }
+  // Logout method
+  static Future<void> logout(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    await GoogleSignIn().signOut();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logged out successfully.')),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()), // Navigate to your LoginPage
+      );
+    }
+  }
 }

@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserDataService {
-  Future<String> getUserName() async {
+  Future<Map<String, dynamic>> getUserData() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -13,15 +13,28 @@ class UserDataService {
             .get();
 
         if (userDoc.exists) {
-          return userDoc.data()?['name'] ?? 'No Name';
+          // Return all user data as a Map
+          return {
+            'name': userDoc.data()?['name'] ?? 'No Name',
+            'username': userDoc.data()?['username'] ?? 'No Username',
+            'email': userDoc.data()?['email'] ?? 'No Email',
+            'city': userDoc.data()?['city'] ?? 'No City',
+            'administrativeArea': userDoc.data()?['administrativeArea'] ?? 'No Administrative Area',
+            'country': userDoc.data()?['country'] ?? 'No Country',
+            'fullAddress': userDoc.data()?['fullAddress'] ?? 'No Address',
+            'pincode': userDoc.data()?['pincode'] ?? 'No Pincode',
+            'created_at': userDoc.data()?['created_at']?.toDate() ?? 'No Creation Date',
+            'last_login': userDoc.data()?['last_login']?.toDate() ?? 'No Last Login Date',
+            'phone_number': userDoc.data()?['phone_number'] ?? 'No Phone number'
+          };
         } else {
-          return 'User not found';
+          return {'error': 'User not found'};
         }
       } else {
-        return 'Not logged in';
+        return {'error': 'Not logged in'};
       }
     } catch (e) {
-      return 'Error fetching data';
+      return {'error': 'Error fetching data: ${e.toString()}'};
     }
   }
 }
