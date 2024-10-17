@@ -86,8 +86,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         Container(
                           width: screenWidth,
                           height: screenHeight * 0.30,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
                               colors: [Colors.orange, Colors.amber],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,

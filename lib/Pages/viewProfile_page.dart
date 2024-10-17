@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart'; // Import the intl package for date formatting
+import 'package:intl/intl.dart'; 
 
 class ViewProfilePage extends StatefulWidget {
   const ViewProfilePage({Key? key}) : super(key: key);
