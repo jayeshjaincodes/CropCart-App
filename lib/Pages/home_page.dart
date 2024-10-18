@@ -47,43 +47,73 @@ class _HomePageState extends State<HomePage> {
     'assets/Banners/banner7.jpg',
   ];
 
+Map<String, List<Map<String, dynamic>>> categorizedProducts = {};
+
   @override
   void initState() {
     super.initState();
     fetchUserData();
-    _getCurrentLocation(); // Automatically fetch location on startup
+    fetchProducts(); // Fetch products on init
+    _getCurrentLocation();
   }
 
-  Future<void> _getCurrentLocation() async {
-    try {
-      Position? position = await locationService.getCurrentPosition();
-      if (position != null) {
-        await _updateLocationData(position);
+  Future<void> fetchProducts() async {
+    // Fetch products from Firestore
+    final QuerySnapshot snapshot = await _firestore.collection('products').get();
+    final List<Map<String, dynamic>> products = snapshot.docs
+        .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
+        .toList();
+
+    // Categorize products
+    for (var product in products) {
+      String category = product['category']; // Adjust based on your product schema
+      if (!categorizedProducts.containsKey(category)) {
+        categorizedProducts[category] = [];
       }
-    } catch (e) {
+      categorizedProducts[category]!.add(product);
+    }
+
+    // Update UI
+    setState(() {});
+  }
+
+
+Future<void> _getCurrentLocation() async {
+  try {
+    Position? position = await locationService.getCurrentPosition();
+    if (position != null) {
+      await _updateLocationData(position);
+    }
+  } catch (e) {
+    if (mounted) {
       setState(() {
         currentAddress = e.toString();
         locality = 'Locality not found';
       });
     }
   }
+}
 
-  Future<void> _updateLocationData(Position position) async {
-    String fullAddress = await locationService.getFullAddress(position);
-    String loc = await locationService.getLocality(position);
-    city = await locationService.getCity(position);
-    pincode = await locationService.getPincode(position);
-    country = await locationService.getCountry(position);
-    administrativeArea = await locationService.getAdministrativeArea(position);
+Future<void> _updateLocationData(Position position) async {
+  // Fetch address data
+  String fullAddress = await locationService.getFullAddress(position);
+  String loc = await locationService.getLocality(position);
+  city = await locationService.getCity(position);
+  pincode = await locationService.getPincode(position);
+  country = await locationService.getCountry(position);
+  administrativeArea = await locationService.getAdministrativeArea(position);
 
+  if (mounted) {
     setState(() {
       currentAddress = fullAddress;
       locality = loc;
       isLocationFetched = true;
     });
-
-    await _storeLocationData();
   }
+
+  await _storeLocationData();
+}
+
 
   Future<void> _storeLocationData() async {
     try {

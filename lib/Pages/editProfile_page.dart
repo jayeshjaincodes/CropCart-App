@@ -27,6 +27,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController pincodeController = TextEditingController();
   final TextEditingController countryController = TextEditingController();
 
+    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   @override
   void initState() {
     super.initState();
@@ -90,6 +92,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> updateUserData() async {
+
+        if (!_formKey.currentState!.validate()) {
+      _showSnackBar('Please fix the errors in the form', Colors.red);
+      return;
+    }
+
     if (_areFieldsEmpty()) {
       _showSnackBar('Please fill all fields', Colors.red);
       return;
@@ -164,12 +172,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     countryController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: _buildGradientBackground(),
@@ -184,15 +188,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
           : userData!.containsKey('error')
               ? Center(child: Text(userData!['error']))
               : SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _buildProfileHeader(screenWidth, screenHeight),
-                      _buildForm(),
-                    ],
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildProfileHeader(
+                          MediaQuery.of(context).size.width,
+                          MediaQuery.of(context).size.height,
+                        ),
+                        _buildForm(),
+                      ],
+                    ),
                   ),
                 ),
     );
   }
+
 
   Widget _buildGradientBackground() {
     return Container(
@@ -258,6 +269,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 }
 
 
+
   Widget _buildForm() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -265,8 +277,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
         children: [
           _buildTextField(nameController, 'First Name', Icons.person),
           const SizedBox(height: 16),
-          _buildTextField(phoneController, 'Phone Number', Icons.phone,
-              keyboardType: TextInputType.number),
+          _buildTextField(
+            phoneController,
+            'Phone Number',
+            Icons.phone,
+            keyboardType: TextInputType.number,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your phone number';
+              } else if (value.length != 10) {
+                return 'Phone number must be exactly 10 digits';
+              }
+              return null;
+            },
+          ),
           const SizedBox(height: 16),
           _buildTextField(addressController, 'Address', Icons.location_city,
               minLines: 1, maxLines: 3),
@@ -299,16 +323,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label,
-      IconData prefixIcon,
-      {TextInputType keyboardType = TextInputType.text,
-      int minLines = 1,
-      int maxLines = 1}) {
-    return TextField(
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData prefixIcon, {
+    TextInputType keyboardType = TextInputType.text,
+    int minLines = 1,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       minLines: minLines,
       maxLines: maxLines,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(prefixIcon),
@@ -317,6 +346,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 }
+
 class BottomWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

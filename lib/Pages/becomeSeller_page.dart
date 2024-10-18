@@ -1,6 +1,6 @@
-import 'package:cropcart/Pages/Services/userData_service.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BecomesellerPage extends StatefulWidget {
   const BecomesellerPage({super.key});
@@ -10,52 +10,52 @@ class BecomesellerPage extends StatefulWidget {
 }
 
 class _BecomesellerPageState extends State<BecomesellerPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final TextEditingController _emailController = TextEditingController();
-  bool _isEmailVerified = false;
-  String _verificationMessage = '';
-  final UserDataService userDataService = UserDataService();
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _businessNameController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
+  final TextEditingController _businessMailController = TextEditingController();
+  final TextEditingController _gstNumberController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _businessDescriptionController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    _checkEmailVerificationStatus();
+  void dispose() {
+    _businessNameController.dispose();
+    _phoneNumberController.dispose();
+    _businessMailController.dispose();
+    _gstNumberController.dispose();
+    _addressController.dispose();
+    _businessDescriptionController.dispose();
+    super.dispose();
   }
 
-  Future<void> _checkEmailVerificationStatus() async {
-    final user = _auth.currentUser;
-    await user?.reload(); // Reload user to get updated verification status
-    setState(() {
-      _isEmailVerified = user?.emailVerified ?? false;
-    });
-    if (_isEmailVerified) {
-      setState(() {
-        _verificationMessage = 'Your email is verified!';
-      });
-    } else {
-      setState(() {
-        _verificationMessage = 'Your email is not verified. Please check your inbox.';
-      });
-    }
-  }
+  void _submitForm() async {
+    // Get the current user ID
+    String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-  Future<void> _sendEmailVerification() async {
-    try {
-      final user = _auth.currentUser;
-      if (user != null && !user.emailVerified) {
-        await user.sendEmailVerification();
-        setState(() {
-          _verificationMessage = 'Verification email sent! Please check your inbox.';
-        });
-      } else {
-        setState(() {
-          _verificationMessage = 'Email is already verified.';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _verificationMessage = 'Error: ${e.toString()}';
-      });
+    if (_formKey.currentState!.validate()) {
+      // Create a seller application object
+      Map<String, dynamic> sellerData = {
+        'userId': currentUserId, // Use the actual current user ID
+        'businessName': _businessNameController.text,
+        'phoneNumber': _phoneNumberController.text,
+        'businessMail': _businessMailController.text,
+        'gstNumber': _gstNumberController.text,
+        'address': _addressController.text,
+        'description': _businessDescriptionController.text,
+        'status': 'pending', // Initial status
+      };
+
+      // Store in Firestore
+      await FirebaseFirestore.instance.collection('sellerApplications').add(sellerData);
+
+      // Show confirmation message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Application submitted successfully!')),
+      );
+
+      // Clear the form
+      _formKey.currentState!.reset();
     }
   }
 
@@ -63,8 +63,9 @@ class _BecomesellerPageState extends State<BecomesellerPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.white),
         backgroundColor: Colors.orange,
-        title: Text('Become a Seller'),
+        title: Text('Become a Seller', style: TextStyle(color: Colors.white)),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
@@ -76,7 +77,7 @@ class _BecomesellerPageState extends State<BecomesellerPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header section with background color
+            // Header section
             Container(
               width: double.infinity,
               padding: EdgeInsets.symmetric(vertical: 40.0, horizontal: 16.0),
@@ -101,19 +102,12 @@ class _BecomesellerPageState extends State<BecomesellerPage> {
                   SizedBox(height: 10),
                   Text(
                     'Become a Seller',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   SizedBox(height: 5),
                   Text(
                     'Sell your products with ease',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.white70),
                   ),
                 ],
               ),
@@ -122,85 +116,129 @@ class _BecomesellerPageState extends State<BecomesellerPage> {
             // Form fields section
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Business Name',
-                      prefixIcon: Icon(Icons.business),
-                      border: OutlineInputBorder(),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _businessNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Business Name',
+                        prefixIcon: Icon(Icons.business),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your business name';
+                        }
+                        return null;
+                      },
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Phone Number',
-                      prefixIcon: Icon(Icons.phone),
-                      border: OutlineInputBorder(),
+                    SizedBox(height: 20),
+                    TextFormField(
+                      controller: _phoneNumberController,
+                      decoration: InputDecoration(
+                        labelText: 'Business Contact Number',
+                        prefixIcon: Icon(Icons.phone),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your Business phone number';
+                        } else if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                          return 'Please enter a valid 10-digit phone number';
+                        }
+                        return null;
+                      },
                     ),
-                    keyboardType: TextInputType.phone,
-                  ),
-                  SizedBox(height: 20),
-                  TextField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Business Mail',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(),
+                    SizedBox(height: 20),
+                    TextFormField(
+                      controller: _businessMailController,
+                      decoration: InputDecoration(
+                        labelText: 'Business Mail',
+                        prefixIcon: Icon(Icons.email),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your business email';
+                        } else if (!RegExp(r'^[\w-]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Please enter a valid email address';
+                        }
+                        return null;
+                      },
                     ),
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _sendEmailVerification,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                    SizedBox(height: 20),
+                    TextFormField(
+                      controller: _gstNumberController,
+                      decoration: InputDecoration(
+                        labelText: 'GST No.',
+                        prefixIcon: Icon(Icons.receipt),
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your GST number';
+                        } else if (!RegExp(r'^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$').hasMatch(value)) {
+                          return 'Please enter a valid GST number';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    TextFormField(
+                      controller: _addressController,
+                      decoration: InputDecoration(
+                        labelText: 'Business Address',
+                        prefixIcon: Icon(Icons.location_on),
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your business address';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    TextFormField(
+                      controller: _businessDescriptionController,
+                      decoration: InputDecoration(
+                        labelText: 'Business Description',
+                        prefixIcon: Icon(Icons.description),
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please provide a description of your business';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _submitForm,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Submit Application',
+                          style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
                       ),
                     ),
-                    child: Center(
-                      child: Text(
-                        'Verify Email',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    _verificationMessage,
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  SizedBox(height: 20),
-                  TextField(
-                    decoration: InputDecoration(
-                      labelText: 'Address',
-                      prefixIcon: Icon(Icons.location_on),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Handle become a seller submission
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Submit Application',
-                        style: TextStyle(fontSize: 18, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

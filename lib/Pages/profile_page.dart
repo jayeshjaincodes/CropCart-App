@@ -1,9 +1,13 @@
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cropcart/Pages/Auth/Auth_service.dart';
 import 'package:cropcart/Pages/Auth/login_page.dart';
+import 'package:cropcart/Pages/Seller%20Dashboard/sellerDashboard_page.dart';
 import 'package:cropcart/Pages/Services/userData_service.dart';
+import 'package:cropcart/Pages/adminPanel_page.dart';
 import 'package:cropcart/Pages/becomeSeller_page.dart';
 import 'package:cropcart/Pages/editProfile_page.dart';
+import 'package:cropcart/Pages/home_page.dart';
 import 'package:cropcart/Pages/viewProfile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -23,15 +27,39 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     fetchUserData();
+    
   }
 
-  Future<void> fetchUserData() async {
-    final data = await userDataService.getUserData();
-    setState(() {
-      userData = data;
-    });
-    print('Fetched user data: $userData');
+Future<void> fetchUserData() async {
+    try {
+      // Fetch the user data directly from Firestore using the authenticated user's UID
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        // Update the state with the latest user data
+        setState(() {
+          userData = userDoc.data();
+        });
+        print('Fetched user data: $userData');
+      } else {
+        // Handle the case where the user is not authenticated
+        setState(() {
+          userData = {'error': 'User not authenticated'};
+        });
+      }
+    } catch (e) {
+      // Handle any error while fetching user data
+      setState(() {
+        userData = {'error': 'Failed to fetch user data'};
+      });
+      print('Error fetching user data: $e');
+    }
   }
+
 
   void logout() async {
     await FirebaseAuth.instance.signOut();
@@ -201,14 +229,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 // Add functionality
                               },
                             ),
-                            _buildProfileOption(
-                              icon: Icons.star,
-                              title: 'Become a Seller',
-                              onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: 
-                                (context) => BecomesellerPage(),));
-                              },
-                            ),
+                            
+                            _getRoleBasedOption(),
                             _buildProfileOption(
                               icon: Icons.logout,
                               title: 'Logout',
@@ -225,6 +247,53 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
     );
   }
+
+  Widget _getRoleBasedOption() {
+  String role = userData?['role'] ?? 'customer';
+
+  switch (role) {
+    case 'seller':
+      return _buildProfileOption(
+        icon: Icons.dashboard,
+        title: 'Seller Dashboard',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SellerDashboardPage(),
+            ),
+          );
+        },
+      );
+    case 'admin':
+      return _buildProfileOption(
+        icon: Icons.admin_panel_settings,
+        title: 'Admin Panel',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AdminPanelPage(),
+            ),
+          );
+        },
+      );
+    case 'customer':
+    default:
+      return _buildProfileOption(
+        icon: Icons.store,
+        title: 'Become a Seller',
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BecomesellerPage(),
+            ),
+          );
+        },
+      );
+  }
+}
 
   Widget _buildProfileOption(
       {required IconData icon,

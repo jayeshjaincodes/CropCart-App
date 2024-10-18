@@ -35,6 +35,7 @@ class GoogleAuthService {
         DocumentSnapshot userSnapshot = await userDoc.get();
 
         String existingPhoneNumber = _getExistingPhoneNumber(userSnapshot);
+        String currentRole = _getExistingRole(userSnapshot);
 
         // Prepare user data
         var userData = {
@@ -44,12 +45,19 @@ class GoogleAuthService {
           'last_login': DateTime.now(),
           'phone_number': existingPhoneNumber,
           'created_at': DateTime.now(), // Always set to current time initially
-          'role':'customer'
         };
 
-        // If the user document already exists, update the last_login and phone_number
+        // Check if user document exists and if role is already set
         if (userSnapshot.exists) {
           userData.remove('created_at'); // Remove created_at for existing users
+          // If the role is not customer, keep the existing role
+          if (currentRole.isNotEmpty && currentRole != 'customer') {
+            userData['role'] = currentRole;
+          } else {
+            userData['role'] = 'customer'; // Default role
+          }
+        } else {
+          userData['role'] = 'customer'; // Set default role for new users
         }
 
         // Store or update user data in Firestore
@@ -110,6 +118,15 @@ class GoogleAuthService {
     if (userSnapshot.exists && userSnapshot.data() != null) {
       var data = userSnapshot.data() as Map<String, dynamic>;
       return data['phone_number'] ?? ''; // Return empty string if field does not exist
+    }
+    return ''; // Return empty string if snapshot does not exist
+  }
+
+  // Helper method to get existing role safely
+  static String _getExistingRole(DocumentSnapshot userSnapshot) {
+    if (userSnapshot.exists && userSnapshot.data() != null) {
+      var data = userSnapshot.data() as Map<String, dynamic>;
+      return data['role'] ?? ''; // Return empty string if field does not exist
     }
     return ''; // Return empty string if snapshot does not exist
   }
