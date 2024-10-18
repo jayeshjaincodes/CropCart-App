@@ -78,26 +78,25 @@ class _CustomDrawerState extends State<CustomDrawer>
               width: 220,
               child: DrawerHeader(
                 padding: const EdgeInsets.all(21),
-
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                     CircleAvatar(
-                                  radius:
-                                      40, // You can adjust the radius as needed
-                                  backgroundImage: userData?[
-                                              'profile_image_url'] !=
-                                          null
-                                      ? NetworkImage(
-                                          userData!['profile_image_url'])
-                                      : null, // Use the image URL from userData
-                                  child: userData?['profile_image_url'] ==
-                                          null // Fallback if no image URL
-                                      ? const Icon(Icons.person,
-                                          size:
-                                              30) // Default icon if no image is available
-                                      : null,
-                                ),
+                    CircleAvatar(
+                      radius: 40, // Adjust the radius as needed
+                      backgroundImage: userData?['profile_image_url'] != null &&
+                              Uri.tryParse(userData!['profile_image_url'])
+                                      ?.isAbsolute ==
+                                  true
+                          ? NetworkImage(userData!['profile_image_url'])
+                          : null, // Use the image URL from userData if valid
+                      child: userData?['profile_image_url'] == null ||
+                              Uri.tryParse(userData!['profile_image_url'])
+                                      ?.isAbsolute !=
+                                  true
+                          ? const Icon(Icons.person,
+                              size: 30) // Default icon if no image is available
+                          : null,
+                    ),
                     const SizedBox(height: 8),
                     Center(
                       child: Text(

@@ -86,7 +86,8 @@ class _ViewProfilePageState extends State<ViewProfilePage> {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          userData?['name'] ?? 'N/A',
+                         userData?['name']?.toUpperCase() ??
+                                    'Loading...',
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

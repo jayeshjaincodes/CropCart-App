@@ -160,108 +160,113 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-Widget _buildMainScreen(double screenWidth, double screenHeight) {
-  return Scaffold(
-    drawer: const CustomDrawer(),
-    appBar: AppBar(
-      bottom: PreferredSize(
-        preferredSize: Size.fromHeight(screenHeight * 0.060),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Row(
-            children: [
-              const Icon(Icons.location_on, size: 25),
-              const SizedBox(width: 9),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Text(
-                    userData!['fullAddress'] ?? 'No Address',
-                    style: const TextStyle(fontSize: 12),
+
+  Widget _buildMainScreen(double screenWidth, double screenHeight) {
+    return Scaffold(
+      drawer: const CustomDrawer(),
+      appBar: AppBar(
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(screenHeight * 0.060),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                const Icon(Icons.location_on, size: 25),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Text(
+                      userData!['fullAddress'] ?? 'No Address',
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                onPressed: _getCurrentLocation,
-                icon: Icon(isLocationFetched
-                    ? Icons.where_to_vote_rounded
-                    : Icons.my_location, color: Colors.green),
-              ),
-            ],
+                IconButton(
+                  onPressed: _getCurrentLocation,
+                  icon: Icon(
+                      isLocationFetched
+                          ? Icons.where_to_vote_rounded
+                          : Icons.my_location,
+                      color: Colors.green),
+                ),
+              ],
+            ),
           ),
         ),
+        backgroundColor: Colors.white,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const SizedBox(width: 0),
+            Image.asset('assets/app-logo.png', width: screenWidth * 0.25),
+            const IconButton(
+                onPressed: null, icon: Icon(Icons.search, color: Colors.black)),
+          ],
+        ),
+        centerTitle: true,
       ),
-      backgroundColor: Colors.white,
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const SizedBox(width: 0),
-          Image.asset('assets/app-logo.png', width: screenWidth * 0.25),
-          const IconButton(onPressed: null, icon: Icon(Icons.search, color: Colors.black)),
-        ],
-      ),
-      centerTitle: true,
-    ),
-    body: RefreshIndicator(
-      onRefresh: fetchUserData,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Center(
-          child: Column(
-            children: [
-              // CarouselSlider
-              CarouselSlider(
-                options: CarouselOptions(
-                  height: screenHeight * 0.22,
-                  autoPlay: true,
-                  enlargeCenterPage: true,
-                  aspectRatio: 16 / 9,
-                  autoPlayCurve: Curves.fastOutSlowIn,
-                  enableInfiniteScroll: true,
-                  autoPlayAnimationDuration: const Duration(milliseconds: 800),
-                  viewportFraction: 0.8,
-                  onPageChanged: (index, reason) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                  },
-                ),
-                items: imgList.map((assetPath) {
-                  return Builder(
-                    builder: (BuildContext context) {
-                      return Container(
-                        width: MediaQuery.of(context).size.width,
-                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15.0),
-                          image: DecorationImage(
-                            image: AssetImage(assetPath),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      );
+      body: RefreshIndicator(
+        onRefresh: fetchUserData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Center(
+            child: Column(
+              children: [
+                // CarouselSlider
+                CarouselSlider(
+                  options: CarouselOptions(
+                    height: screenHeight * 0.22,
+                    autoPlay: true,
+                    enlargeCenterPage: true,
+                    aspectRatio: 16 / 9,
+                    autoPlayCurve: Curves.fastOutSlowIn,
+                    enableInfiniteScroll: true,
+                    autoPlayAnimationDuration:
+                        const Duration(milliseconds: 800),
+                    viewportFraction: 0.8,
+                    onPageChanged: (index, reason) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
                     },
-                  );
-                }).toList(),
-              ),
-              // Dots indicator placed below the slider
-              Padding(
-                padding: const EdgeInsets.only(top: 10.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(imgList.length, (index) => _buildDot(index == _currentIndex)),
+                  ),
+                  items: imgList.map((assetPath) {
+                    return Builder(
+                      builder: (BuildContext context) {
+                        return Container(
+                          width: MediaQuery.of(context).size.width,
+                          margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(15.0),
+                            image: DecorationImage(
+                              image: AssetImage(assetPath),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }).toList(),
                 ),
-              ),
-              // Product categories grid
-              _buildProductCategories(),
-            ],
+                // Dots indicator placed below the slider
+                Padding(
+                  padding: const EdgeInsets.only(top: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(imgList.length,
+                        (index) => _buildDot(index == _currentIndex)),
+                  ),
+                ),
+                // Product categories grid
+                _buildProductCategories(),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   // Function to build the dot indicator
   Widget _buildDot(bool isActive) {
@@ -271,30 +276,54 @@ Widget _buildMainScreen(double screenWidth, double screenHeight) {
       width: isActive ? 10.0 : 8.0,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isActive ? Colors.green : Colors.grey, // Active dot color vs. inactive
+        color: isActive
+            ? Colors.green
+            : Colors.grey, // Active dot color vs. inactive
       ),
     );
   }
 }
 
-
-
 Widget _buildProductCategories() {
   // Define the categories and images
   final List<Map<String, String>> categories = [
-    {'name': 'Seeds and Plants', 'image': 'assets/Categories/seeds_and_plants.webp'},
-    {'name': 'Fertilizers and Soil Enhancers', 'image':'assets/app-logo.png'},
-    {'name': 'Pesticides and Insecticides', 'image': 'assets/app-logo.png'},
-    {'name': 'Farm Equipment and Tools', 'image':'assets/app-logo.png'},
-    {'name': 'Irrigation Systems and Accessories', 'image': 'assets/app-logo.png'},
+    {
+      'name': 'Seeds and Plants',
+      'image': 'assets/Categories/seeds_and_plants.webp'
+    },
+    {
+      'name': 'Fertilizers and Soil Enhancers',
+      'image': 'assets/Categories/Fertilizers-and-Soil-Enhancers.webp'
+    },
+    {
+      'name': 'Pesticides and Insecticides',
+      'image': 'assets/Categories/Pesticides-and-Insecticides.png'
+    },
+    {
+      'name': 'Farm Equipment and Tools',
+      'image': 'assets/app-logo.png'
+    },
+    {
+      'name': 'Irrigation Systems and Accessories',
+      'image': 'assets/app-logo.png'
+    },
     {'name': 'Livestock and Poultry Supplies', 'image': 'assets/app-logo.png'},
-    {'name': 'Agrochemicals and Plant Growth Regulators', 'image': 'assets/app-logo.png'},
+    {
+      'name': 'Agrochemicals and Plant Growth Regulators',
+      'image': 'assets/app-logo.png'
+    },
     {'name': 'Greenhouse and Nursery Supplies', 'image': 'assets/app-logo.png'},
     {'name': 'Machinery and Farm Vehicles', 'image': 'assets/app-logo.png'},
-    {'name': 'Protective Gear and Safety Equipment', 'image': 'assets/app-logo.png'},
+    {
+      'name': 'Protective Gear and Safety Equipment',
+      'image': 'assets/app-logo.png'
+    },
     {'name': 'Organic Farming Supplies', 'image': 'assets/app-logo.png'},
-    {'name': 'Packaging and Storage Solutions', 'image':'assets/app-logo.png'},
-    {'name': 'Weather Monitoring and Farm Management Tools', 'image':'assets/app-logo.png'},
+    {'name': 'Packaging and Storage Solutions', 'image': 'assets/app-logo.png'},
+    {
+      'name': 'Weather Monitoring and Farm Management Tools',
+      'image': 'assets/app-logo.png'
+    },
     {'name': 'Animal Husbandry Supplies', 'image': 'assets/app-logo.png'},
     {'name': 'Renewable Energy Solutions', 'image': 'assets/app-logo.png'},
   ];
@@ -307,7 +336,8 @@ Widget _buildProductCategories() {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Product Categories', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Product Categories',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             TextButton(
               onPressed: () {
                 // Navigate to the full categories page
@@ -333,7 +363,8 @@ Widget _buildProductCategories() {
           ),
           itemCount: categories.length,
           itemBuilder: (context, index) {
-            return _buildCategoryItem(categories[index]['name']!, categories[index]['image']!);
+            return _buildCategoryItem(
+                categories[index]['name']!, categories[index]['image']!);
           },
         ),
       ],
@@ -352,13 +383,22 @@ Widget _buildCategoryItem(String name, String imagePath) {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         CircleAvatar(
-          radius: 30,           backgroundImage: AssetImage(imagePath), // Set the background image
-          backgroundColor: Colors.transparent, 
+          radius: 30,
+          backgroundColor: Colors.transparent,
+          child: ClipOval(
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit
+                  .cover, // This ensures the image covers the entire circle
+              width:
+                  60, // Adjust width and height to match the CircleAvatar's radius
+              height: 60,
+            ),
+          ),
         ),
-
         Center(
           child: Padding(
-            padding: const EdgeInsets.only(left: 8.0,right: 8),
+            padding: const EdgeInsets.only(left: 8.0, right: 8),
             child: Text(
               name,
               overflow: TextOverflow.visible,

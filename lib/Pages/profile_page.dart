@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:cropcart/Pages/Auth/Auth_service.dart';
 import 'package:cropcart/Pages/Auth/login_page.dart';
 import 'package:cropcart/Pages/Services/userData_service.dart';
+import 'package:cropcart/Pages/becomeSeller_page.dart';
 import 'package:cropcart/Pages/editProfile_page.dart';
 import 'package:cropcart/Pages/viewProfile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -101,17 +102,21 @@ class _ProfilePageState extends State<ProfilePage> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               CircleAvatar(
-                                radius: 40,
-                                backgroundImage:
-                                    userData?['profile_image_url'] != null
-                                        ? NetworkImage(
-                                            userData!['profile_image_url'])
-                                        : null,
-                                child: userData?['profile_image_url'] == null
-                                    ? const Icon(Icons.person,
-                                        size: 40, color: Colors.white)
-                                    : null,
-                              ),
+                      radius: 40, // Adjust the radius as needed
+                      backgroundImage: userData?['profile_image_url'] != null &&
+                              Uri.tryParse(userData!['profile_image_url'])
+                                      ?.isAbsolute ==
+                                  true
+                          ? NetworkImage(userData!['profile_image_url'])
+                          : null, // Use the image URL from userData if valid
+                      child: userData?['profile_image_url'] == null ||
+                              Uri.tryParse(userData!['profile_image_url'])
+                                      ?.isAbsolute !=
+                                  true
+                          ? const Icon(Icons.person,
+                              size: 30) // Default icon if no image is available
+                          : null,
+                    ),
                               const SizedBox(height: 10),
                               Text(
                                 userData?['name']?.toUpperCase() ??
@@ -198,9 +203,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             _buildProfileOption(
                               icon: Icons.star,
-                              title: 'Become a partner',
+                              title: 'Become a Seller',
                               onTap: () {
-                                // Add functionality
+                                Navigator.push(context, MaterialPageRoute(builder: 
+                                (context) => BecomesellerPage(),));
                               },
                             ),
                             _buildProfileOption(

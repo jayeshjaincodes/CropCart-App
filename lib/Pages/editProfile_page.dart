@@ -7,10 +7,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class EditProfilePage extends StatefulWidget {
-  const EditProfilePage({super.key});
+  const EditProfilePage({Key? key}) : super(key: key);
 
   @override
-  State<EditProfilePage> createState() => _EditProfilePageState();
+  _EditProfilePageState createState() => _EditProfilePageState();
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
@@ -39,20 +39,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (data != null && mounted) {
         setState(() {
           userData = data;
-          nameController.text = userData?['name'] ?? '';
-          phoneController.text = userData?['phone_number'] ?? '';
-          addressController.text = userData?['fullAddress'] ?? '';
-          cityController.text = userData?['city'] ?? '';
-          stateController.text = userData?['administrativeArea'] ?? '';
-          pincodeController.text = userData?['pincode'] ?? '';
-          countryController.text = userData?['country'] ?? '';
+          _populateControllers(userData!);
         });
       } else {
-        print('No user data found');
+        _showSnackBar('No user data found');
       }
     } catch (e) {
-      print('Error fetching user data: $e');
+      _showSnackBar('Error fetching user data: $e');
     }
+  }
+
+  void _populateControllers(Map<String, dynamic> userData) {
+    nameController.text = userData['name'] ?? '';
+    phoneController.text = userData['phone_number'] ?? '';
+    addressController.text = userData['fullAddress'] ?? '';
+    cityController.text = userData['city'] ?? '';
+    stateController.text = userData['administrativeArea'] ?? '';
+    pincodeController.text = userData['pincode'] ?? '';
+    countryController.text = userData['country'] ?? '';
   }
 
   Future<void> _uploadImage(File image) async {
@@ -70,24 +74,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'profile_image_url': downloadURL,
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Image uploaded successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      _showSnackBar('Image uploaded successfully', Colors.green);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error uploading image: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      print('Error uploading image: $e');
+      _showSnackBar('Error uploading image: ${e.toString()}', Colors.red);
     }
   }
 
@@ -101,35 +90,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> updateUserData() async {
-    if (nameController.text.isEmpty ||
-        phoneController.text.isEmpty ||
-        addressController.text.isEmpty ||
-        cityController.text.isEmpty ||
-        stateController.text.isEmpty ||
-        pincodeController.text.isEmpty ||
-        countryController.text.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill all fields'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    if (_areFieldsEmpty()) {
+      _showSnackBar('Please fill all fields', Colors.red);
       return;
     }
 
     String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
     if (userId.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User not found. Please log in again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _showSnackBar('User not found. Please log in again.', Colors.red);
       return;
     }
 
@@ -140,14 +108,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           .get();
 
       if (!userDoc.exists) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('User document does not exist'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        _showSnackBar('User document does not exist', Colors.red);
         return;
       }
 
@@ -165,27 +126,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
         await _uploadImage(_selectedImage!);
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      _showSnackBar('Profile updated successfully', Colors.green);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating profile: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      print('Error: $e');
+      _showSnackBar('Error updating profile: ${e.toString()}', Colors.red);
     }
   }
 
+  bool _areFieldsEmpty() {
+    return nameController.text.isEmpty ||
+        phoneController.text.isEmpty ||
+        addressController.text.isEmpty ||
+        cityController.text.isEmpty ||
+        stateController.text.isEmpty ||
+        pincodeController.text.isEmpty ||
+        countryController.text.isEmpty;
+  }
+
+  void _showSnackBar(String message, [Color color = Colors.red]) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: color,
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -206,24 +172,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
     return Scaffold(
       appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.lightGreen.shade400,
-                Colors.green,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-        ),
+        flexibleSpace: _buildGradientBackground(),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back,color: Colors.white,),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: userData == null
@@ -233,173 +186,137 @@ class _EditProfilePageState extends State<EditProfilePage> {
               : SingleChildScrollView(
                   child: Column(
                     children: [
-                      Stack(
-                        children: [
-                          ClipPath(
-                            clipper: BottomWaveClipper(),
-                            child: Container(
-                              width: screenWidth,
-                              height: screenHeight * 0.23,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.green, // Start color
-                                    Colors.green.shade800, // End color
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 30,
-                            left: (screenWidth / 2) - 50,
-                            child: GestureDetector(
-                              onTap: _pickImage,
-                              child: CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.white,
-                                backgroundImage: _selectedImage != null
-                                    ? FileImage(_selectedImage!)
-                                    : (userData?['profile_image_url'] != null &&
-                                            userData?['profile_image_url']
-                                                .isNotEmpty)
-                                        ? NetworkImage(
-                                            userData!['profile_image_url'])
-                                        : null,
-                                child: _selectedImage == null &&
-                                        (userData?['profile_image_url'] ==
-                                                null ||
-                                            userData!['profile_image_url']
-                                                .isEmpty)
-                                    ? const Icon(Icons.camera_alt,
-                                        size: 50, color: Colors.grey)
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'First Name',
-                                labelStyle: TextStyle(color: Colors.black),
-                                prefixIcon: Icon(Icons.person),
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                        width: 2, color: Colors.green)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: phoneController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Phone Number',
-                                labelStyle: TextStyle(color: Colors.black),
-                                prefixIcon: Icon(Icons.phone),
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                        width: 2, color: Colors.green)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: addressController,
-                              minLines: 1,
-                              maxLines: 3,
-                              decoration: const InputDecoration(
-                                labelText: 'Address',
-                                labelStyle: TextStyle(color: Colors.black),
-                                prefixIcon: Icon(Icons.location_city),
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                        width: 2, color: Colors.green)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: cityController,
-                              decoration: const InputDecoration(
-                                labelText: 'City',
-                                labelStyle: TextStyle(color: Colors.black),
-                                prefixIcon: Icon(Icons.location_on),
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                        width: 2, color: Colors.green)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: stateController,
-                              decoration: const InputDecoration(
-                                labelText: 'State',
-                                labelStyle: TextStyle(color: Colors.black),
-                                prefixIcon: Icon(Icons.location_city_sharp),
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                        width: 2, color: Colors.green)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: pincodeController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Pincode',
-                                labelStyle: TextStyle(color: Colors.black),
-                                prefixIcon: Icon(Icons.pin),
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                        width: 2, color: Colors.green)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextFormField(
-                              controller: countryController,
-                              decoration: const InputDecoration(
-                                labelText: 'Country',
-                                labelStyle: TextStyle(color: Colors.black),
-                                prefixIcon: Icon(Icons.flag),
-                                border: OutlineInputBorder(),
-                                focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                        width: 2, color: Colors.green)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: updateUserData,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                ),
-                                child: const Text('Save Changes',style: TextStyle(color: Colors.white),),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildProfileHeader(screenWidth, screenHeight),
+                      _buildForm(),
                     ],
                   ),
                 ),
     );
   }
+
+  Widget _buildGradientBackground() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.lightGreen.shade400,
+            Colors.green,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+    );
+  }
+
+ Widget _buildProfileHeader(double screenWidth, double screenHeight) {
+  return Stack(
+    children: [
+      ClipPath(
+        clipper: BottomWaveClipper(),
+        child: Container(
+          width: screenWidth,
+          height: screenHeight * 0.23,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.green, // Start color
+                Colors.green.shade800, // End color
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+      ),
+      Positioned(
+        top: 30,
+        left: (screenWidth / 2) - 50,
+        child: GestureDetector(
+          onTap: _pickImage,
+          child: CircleAvatar(
+            radius: 50,
+            backgroundColor: Colors.white,
+            backgroundImage: _selectedImage != null
+                ? FileImage(_selectedImage!)
+                : (userData?['profile_image_url'] != null &&
+                        userData!['profile_image_url'].isNotEmpty &&
+                        !userData!['profile_image_url'].contains('No Profile Image'))
+                    ? NetworkImage(userData!['profile_image_url'])
+                    : null, // Set to null if there is no valid image URL
+            child: _selectedImage == null &&
+                    (userData?['profile_image_url'] == null ||
+                        userData!['profile_image_url'].isEmpty ||
+                        userData!['profile_image_url'].contains('No Profile Image'))
+                ? const Icon(Icons.camera_alt, size: 50, color: Colors.grey)
+                : null,
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
+
+  Widget _buildForm() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          _buildTextField(nameController, 'First Name', Icons.person),
+          const SizedBox(height: 16),
+          _buildTextField(phoneController, 'Phone Number', Icons.phone,
+              keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _buildTextField(addressController, 'Address', Icons.location_city,
+              minLines: 1, maxLines: 3),
+          const SizedBox(height: 16),
+          _buildTextField(cityController, 'City', Icons.location_on),
+          const SizedBox(height: 16),
+          _buildTextField(stateController, 'State',
+              Icons.location_city_sharp),
+          const SizedBox(height: 16),
+          _buildTextField(pincodeController, 'Pincode', Icons.pin,
+              keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          _buildTextField(countryController, 'Country', Icons.flag),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: updateUserData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: const Text(
+                'Save Changes',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label,
+      IconData prefixIcon,
+      {TextInputType keyboardType = TextInputType.text,
+      int minLines = 1,
+      int maxLines = 1}) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      minLines: minLines,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(prefixIcon),
+        border: const OutlineInputBorder(),
+      ),
+    );
+  }
+}
 class BottomWaveClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {

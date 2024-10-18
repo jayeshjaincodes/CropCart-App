@@ -44,6 +44,7 @@ class GoogleAuthService {
           'last_login': DateTime.now(),
           'phone_number': existingPhoneNumber,
           'created_at': DateTime.now(), // Always set to current time initially
+          'role':'customer'
         };
 
         // If the user document already exists, update the last_login and phone_number

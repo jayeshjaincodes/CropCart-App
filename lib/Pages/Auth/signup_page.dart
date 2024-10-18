@@ -16,15 +16,14 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-
   String currentAddress = 'Fetching location...';
   String locality = 'Fetching locality...';
-  String city = ''; 
-  String pincode = ''; 
-  String country = ''; 
+  String city = '';
+  String pincode = '';
+  String country = '';
   String administrativeArea = '';
   final LocationService locationService = LocationService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final GoogleAuthService googleAuthService = GoogleAuthService();
 
@@ -34,12 +33,12 @@ class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-
   @override
   void initState() {
     super.initState();
     _getCurrentLocation();
   }
+
   Future<void> _getCurrentLocation() async {
     try {
       Position? position = await locationService.getCurrentPosition();
@@ -48,8 +47,9 @@ class _SignupPageState extends State<SignupPage> {
         String loc = await locationService.getLocality(position);
         city = await locationService.getCity(position); // Get city
         pincode = await locationService.getPincode(position); // Get pincode
-        country = await locationService.getCountry(position); 
-        administrativeArea = await locationService.getAdministrativeArea(position);// Get country
+        country = await locationService.getCountry(position);
+        administrativeArea = await locationService
+            .getAdministrativeArea(position); // Get country
 
         if (mounted) {
           setState(() {
@@ -70,11 +70,12 @@ class _SignupPageState extends State<SignupPage> {
     }
   }
 
-  Future<void> _storeLocationData(String fullAddress, String locality, String city, String pincode, String country) async {
+  Future<void> _storeLocationData(String fullAddress, String locality,
+      String city, String pincode, String country) async {
     try {
       // Use the user's UID as the document ID to store user-specific data
       String uid = FirebaseAuth.instance.currentUser!.uid;
-      
+
       // Create or update the document in Firestore
       await _firestore.collection('users').doc(uid).set({
         'fullAddress': fullAddress,
@@ -96,85 +97,92 @@ class _SignupPageState extends State<SignupPage> {
       });
 
       try {
+        // Create a new user
         UserCredential usercred =
             await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: emailController.text,
           password: passwordController.text,
         );
 
-        var data = {
+        // Prepare user data for Firestore
+        final Map<String, dynamic> data = {
           'name': nameController.text,
           'username': emailController.text.split('@')[0],
           'email': emailController.text,
           'created_at': DateTime.now(),
-          'phone_number':'',
-          'last_login': DateTime.now()
+          'phone_number': '', // Placeholder, update as needed
+          'last_login': DateTime.now(),
+          'role': 'customer',
         };
 
+        // Store user data in Firestore
         if (usercred.user != null) {
           await FirebaseFirestore.instance
               .collection('users')
               .doc(usercred.user!.uid)
               .set(data);
+
+          // Send email verification
+          await usercred.user!.sendEmailVerification();
+
+          // Inform the user to check their email
+          _showSnackBar('Registration successful! Please verify your email.',
+              Colors.green);
         }
 
-        // Success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registration successful!'),
-            backgroundColor: Colors.green, // Success color
-          ),
-        );
-
+        // Navigate to the next screen (Wrapper) - consider waiting for verification
         Get.offAll(const Wrapper());
       } on FirebaseAuthException catch (e) {
-        String errorMessage;
-        switch (e.code) {
-          case 'email-already-in-use':
-            errorMessage =
-                'This email address is already in use. Please try logging in.';
-            break;
-          case 'invalid-email':
-            errorMessage =
-                'The email address is not valid. Please enter a valid email.';
-            break;
-          case 'weak-password':
-            errorMessage =
-                'The password is too weak. Please use a stronger password.';
-            break;
-          case 'operation-not-allowed':
-            errorMessage =
-                'Email/password accounts are not enabled. Please contact support.';
-            break;
-          case 'network-request-failed':
-            errorMessage =
-                'Network error. Please check your internet connection and try again.';
-            break;
-          default:
-            errorMessage =
-                'An unexpected error occurred. Please try again later.';
-        }
-        // Error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error:$errorMessage'),
-            backgroundColor: Colors.red, // Error color
-          ),
-        );
+        _handleAuthError(e);
       } catch (e) {
-        // General error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red, // Error color
-          ),
-        );
+        _showSnackBar('Error: ${e.toString()}', Colors.red);
       } finally {
         setState(() {
           _isLoading = false;
         });
       }
     }
+  }
+  
+
+// Function to handle FirebaseAuth exceptions
+  void _handleAuthError(FirebaseAuthException e) {
+    String errorMessage;
+    switch (e.code) {
+      case 'email-already-in-use':
+        errorMessage =
+            'This email address is already in use. Please try logging in.';
+        break;
+      case 'invalid-email':
+        errorMessage =
+            'The email address is not valid. Please enter a valid email.';
+        break;
+      case 'weak-password':
+        errorMessage =
+            'The password is too weak. Please use a stronger password.';
+        break;
+      case 'operation-not-allowed':
+        errorMessage =
+            'Email/password accounts are not enabled. Please contact support.';
+        break;
+      case 'network-request-failed':
+        errorMessage =
+            'Network error. Please check your internet connection and try again.';
+        break;
+      default:
+        errorMessage = 'An unexpected error occurred. Please try again later.';
+    }
+    _showSnackBar('Error: $errorMessage', Colors.red);
+  }
+
+// Function to show SnackBar
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+      ),
+    );
   }
 
   @override
@@ -370,31 +378,7 @@ class _SignupPageState extends State<SignupPage> {
                               width: 45,
                             ),
                           ),
-                          // const SizedBox(width: 30.0),
-                          // InkWell(
-                          //   onTap: () async {
-                          //     try {
-                          //       ScaffoldMessenger.of(context).showSnackBar(
-                          //         const SnackBar(
-                          //           content: Text('Apple sign-in successful!'),
-                          //           backgroundColor: Colors.green,
-                          //         ),
-                          //       );
-                          //     } catch (e) {
-                          //       ScaffoldMessenger.of(context).showSnackBar(
-                          //         SnackBar(
-                          //           content: Text('Error: ${e.toString()}'),
-                          //           backgroundColor: Colors.red,
-                          //         ),
-                          //       );
-                          //     }
-                          //   },
-                          //   child: Image.asset(
-                          //     "assets/apple.png",
-                          //     height: 45,
-                          //     width: 50,
-                          //   ),
-                          // ),
+
                         ],
                       ),
                       const SizedBox(height: 30.0),
