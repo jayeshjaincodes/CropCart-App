@@ -4,10 +4,13 @@ import 'package:cropcart/Pages/Auth/Auth_service.dart';
 import 'package:cropcart/Pages/Auth/login_page.dart';
 import 'package:cropcart/Pages/Services/location_service.dart';
 import 'package:cropcart/Pages/Services/userData_service.dart';
+import 'package:cropcart/Pages/category_page.dart';
 import 'package:cropcart/Pages/home_drawer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/route_manager.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -331,31 +334,31 @@ Widget _buildProductCategories() {
     },
     {
       'name': 'Farm Equipment and Tools',
-      'image': 'assets/app-logo.png'
+      'image': 'assets/Categories/Farm-Equipment-and-Tools.png'
     },
     {
       'name': 'Irrigation Systems and Accessories',
-      'image': 'assets/app-logo.png'
+      'image': 'assets/Categories/Irrigation-System-and-Accesories.png'
     },
-    {'name': 'Livestock and Poultry Supplies', 'image': 'assets/app-logo.png'},
+    {'name': 'Livestock and Poultry Supplies', 'image': 'assets/Categories/Livestock-and-Poultry-Supplies.png'},
     {
       'name': 'Agrochemicals and Plant Growth Regulators',
-      'image': 'assets/app-logo.png'
+      'image': 'assets/Categories/Agrochemicals-and-Plant-Growth-Regulators.png'
     },
-    {'name': 'Greenhouse and Nursery Supplies', 'image': 'assets/app-logo.png'},
-    {'name': 'Machinery and Farm Vehicles', 'image': 'assets/app-logo.png'},
+    {'name': 'Greenhouse and Nursery Supplies', 'image': 'assets/Categories/Greenhouse-and-Nursery-Supplies.png'},
+    {'name': 'Machinery and Farm Vehicles', 'image': 'assets/Categories/Machinery-and-Farm-Vehicles.png'},
     {
       'name': 'Protective Gear and Safety Equipment',
-      'image': 'assets/app-logo.png'
+      'image': 'assets/Categories/Protective-Gear-and-Safety-Equipment.png'
     },
-    {'name': 'Organic Farming Supplies', 'image': 'assets/app-logo.png'},
-    {'name': 'Packaging and Storage Solutions', 'image': 'assets/app-logo.png'},
+    {'name': 'Organic Farming Supplies', 'image': 'assets/Categories/Organic-Farming-Supplies.png'},
+    {'name': 'Packaging and Storage Solutions', 'image': 'assets/Categories/Packaging-and-Storage-Solutions.png'},
     {
       'name': 'Weather Monitoring and Farm Management Tools',
-      'image': 'assets/app-logo.png'
+      'image': 'assets/Categories/Weather-Monitoring-and-Farm-Management-Tool.png'
     },
-    {'name': 'Animal Husbandry Supplies', 'image': 'assets/app-logo.png'},
-    {'name': 'Renewable Energy Solutions', 'image': 'assets/app-logo.png'},
+    {'name': 'Animal Husbandry Supplies', 'image': 'assets/Categories/Animal-Husbandry-Supplies.png'},
+    {'name': 'Renewable Energy Solutions', 'image': 'assets/Categories/Renewable-Energy-Solutions.png'},
   ];
 
   return Padding(
@@ -372,8 +375,8 @@ Widget _buildProductCategories() {
               onPressed: () {
                 // Navigate to the full categories page
               },
-              child: Row(
-                children: const [
+              child: const Row(
+                children:  [
                   Text('View All', style: TextStyle(color: Colors.green)),
                   Icon(Icons.arrow_forward, color: Colors.green),
                 ],
@@ -402,42 +405,44 @@ Widget _buildProductCategories() {
   );
 }
 
-// Function to create each category item in the grid
+
 Widget _buildCategoryItem(String name, String imagePath) {
-  return Card(
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8.0),
-    ),
-    elevation: 2,
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.transparent,
-          child: ClipOval(
-            child: Image.asset(
-              imagePath,
-              fit: BoxFit
-                  .cover, // This ensures the image covers the entire circle
-              width:
-                  60, // Adjust width and height to match the CircleAvatar's radius
-              height: 60,
+  return InkWell(
+    onTap: () {
+      Get.to(() => CategoryPage(categoryName: name), transition: Transition.fade);
+    },
+    child: Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      elevation: 2,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.transparent,
+            child: ClipOval(
+              child: Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                width: 60,
+                height: 60,
+              ),
             ),
           ),
-        ),
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8.0, right: 8),
-            child: Text(
-              name,
-              overflow: TextOverflow.visible,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }

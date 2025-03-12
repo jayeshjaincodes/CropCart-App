@@ -8,6 +8,7 @@ import 'package:cropcart/Pages/adminPanel_page.dart';
 import 'package:cropcart/Pages/becomeSeller_page.dart';
 import 'package:cropcart/Pages/editProfile_page.dart';
 import 'package:cropcart/Pages/home_page.dart';
+import 'package:cropcart/Pages/myOrders_page.dart';
 import 'package:cropcart/Pages/viewProfile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -204,7 +205,7 @@ Future<void> fetchUserData() async {
                               icon: Icons.shopping_bag,
                               title: 'My Orders',
                               onTap: () {
-                                // Add functionality
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => MyOrdersPage(),));
                               },
                             ),
                             _buildProfileOption(

@@ -1,6 +1,7 @@
 import 'package:cropcart/Pages/Auth/Auth_service.dart';
 import 'package:cropcart/Pages/Auth/login_page.dart';
 import 'package:cropcart/Pages/Services/userData_service.dart';
+import 'package:cropcart/Pages/cartPage.dart';
 import 'package:cropcart/Pages/faq_page.dart';
 import 'package:cropcart/Pages/profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,6 +20,8 @@ class _CustomDrawerState extends State<CustomDrawer>
   late Animation<Offset> _slideAnimation;
   Map<String, dynamic>? userData;
   final UserDataService userDataService = UserDataService();
+  List<Map<String, dynamic>> cartItems = [];
+
 
   @override
   void initState() {
@@ -135,9 +138,9 @@ class _CustomDrawerState extends State<CustomDrawer>
                             ));
                       }),
                   _createDrawerItem(
-                      icon: Icons.receipt,
-                      text: 'MY TRANSACTIONS',
-                      onTap: () {}),
+                      icon: Icons.shopping_cart,
+                      text: 'Cart',
+                      onTap: () {Navigator.push(context, MaterialPageRoute(builder: (context) => CartPage(cartItems: cartItems),));}),
                   _createDrawerItem(
                       icon: Icons.contact_phone,
                       text: 'CONTACT US',

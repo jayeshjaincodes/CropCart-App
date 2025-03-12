@@ -14,7 +14,7 @@ class _CreateProductPageState extends State<CreateProductPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance; // Storage instance
   final ImagePicker _picker = ImagePicker();
-  
+
   // Form fields
   String? _productName;
   String? _description;
@@ -23,6 +23,9 @@ class _CreateProductPageState extends State<CreateProductPage> {
   double? _discountedPrice;
   int? _stock;
   File? _imageFile; // Added for image file
+
+  // Loading state
+  bool _isLoading = false; // New loading state variable
 
   // Fixed categories
   final List<Map<String, String>> categories = [
@@ -47,6 +50,10 @@ class _CreateProductPageState extends State<CreateProductPage> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
+      setState(() {
+        _isLoading = true; // Start loading
+      });
+
       String? imageUrl;
 
       // Upload the image to Firebase Storage if an image is selected
@@ -63,12 +70,16 @@ class _CreateProductPageState extends State<CreateProductPage> {
         'originalPrice': _originalPrice,
         'discountedPrice': _discountedPrice,
         'stock': _stock,
-        'imageUrl': imageUrl, 
+        'imageUrl': imageUrl,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Product created successfully!')),
       );
+
+      setState(() {
+        _isLoading = false; // Stop loading
+      });
 
       Navigator.pop(context);
     }
@@ -132,7 +143,7 @@ class _CreateProductPageState extends State<CreateProductPage> {
                         ),
                       ),
                       SizedBox(height: 20),
-                      
+
                       // Image Upload Section
                       Row(
                         children: [
@@ -169,7 +180,8 @@ class _CreateProductPageState extends State<CreateProductPage> {
                         ],
                       ),
                       SizedBox(height: 20),
-                      
+
+                      // Form fields
                       TextFormField(
                         decoration: InputDecoration(
                           labelText: 'Product Name',
@@ -276,12 +288,12 @@ class _CreateProductPageState extends State<CreateProductPage> {
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: EdgeInsets.symmetric(horizontal: 10),
-                          prefixIcon: Icon(Icons.storage),
+                          prefixIcon: Icon(Icons.store),
                         ),
                         keyboardType: TextInputType.number,
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter the stock';
+                            return 'Please enter the stock quantity';
                           }
                           if (int.tryParse(value) == null) {
                             return 'Please enter a valid number';
@@ -291,15 +303,20 @@ class _CreateProductPageState extends State<CreateProductPage> {
                         onSaved: (value) => _stock = int.tryParse(value!),
                       ),
                       SizedBox(height: 20),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: _createProduct,
-                          child: Text('Create Product',style: TextStyle(color: Colors.white),),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
+
+                      // Create Product Button
+                      _isLoading // Show circular progress indicator if loading
+                          ? Center(child: CircularProgressIndicator())
+                          : Center(
+                            child: ElevatedButton(
+                                onPressed: _createProduct,
+                                child: Text('Create Product'),
+                                style: ElevatedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: Colors.orange,
+                                ),
+                              ),
                           ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
